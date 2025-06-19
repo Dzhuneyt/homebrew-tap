@@ -34,11 +34,6 @@ jobs:
         run: |
           curl -L "${{ steps.get_release.outputs.url }}" -o asset.tar.gz
 
-      - run: echo "url=${{ steps.get_release.outputs.url }}"
-      - run: echo "tag=${{ steps.get_release.outputs.tag }}"
-      - run: echo "sha256=$(shasum -a 256 asset.tar.gz | awk '{print $1}')" >> $GITHUB_OUTPUT
-      - run: exit 1
-      
       - name: Calculate SHA256
         id: sha
         run: |
@@ -50,6 +45,7 @@ jobs:
           sed -i.bak "s|url \".*\"|url \"${{ steps.get_release.outputs.url }}\"|" cf-purge.rb
           sed -i.bak "s|sha256 \".*\"|sha256 \"${{ steps.sha.outputs.sha256 }}\"|" cf-purge.rb
           rm cf-purge.rb.bak
+          cat cf-purge.rb
 
       - name: Commit and push changes
         run: |
