@@ -1,4 +1,4 @@
-name: Update Homebrew Formula
+name: cf-purge - update Homebrew formula
 
 description: |
   Automatically update cf-purge.rb with the latest release URL and SHA256 from the GoLang app repo.
@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: write
-  
+
 jobs:
   update-formula:
     runs-on: ubuntu-latest
