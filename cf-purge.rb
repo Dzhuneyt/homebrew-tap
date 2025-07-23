@@ -1,8 +1,8 @@
 class CfPurge < Formula
     desc "Purge CloudFormation stacks that match a glob pattern"
     homepage "https://github.com/dzhuneyt/cf-purge"
-    url "https://api.github.com/repos/Dzhuneyt/cf-purge/tarball/0.0.14"
-    sha256 "a1a6100800f945832f7e883cda22ba9e616f2fb2ab05486e1f470a10561e1d7a"
+    url "https://api.github.com/repos/Dzhuneyt/cf-purge/tarball/0.0.29"
+    sha256 "4059ac5db6689b585303d78f372397fd4b113ca336b2511acf4ba749bcf79221"
     license "MIT"
   
     depends_on "go" => :build
