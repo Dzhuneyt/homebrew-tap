@@ -59,3 +59,43 @@ jobs:
           git diff --cached --quiet && echo "No changes to commit" && exit 0
           git commit -m "Update formula to ${{ steps.get_release.outputs.tag }}"
           git push
+
+  smoke-test:
+    needs: update-formula
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Install Go
+        run: brew install go
+
+      - name: Add this tap
+        run: |
+          brew tap ${{ github.repository }}
+
+      - name: Install cf-purge
+        run: |
+          brew install cf-purge
+
+      - name: Verify cf-purge installation
+        run: |
+          # Test that the binary exists and is executable
+          if [ ! -f "$(brew --prefix)/bin/cf-purge" ]; then
+            echo "Error: cf-purge binary not found in expected location"
+            exit 1
+          fi
+          
+          # Test that --help works
+          if ! cf-purge --help > /dev/null 2>&1; then
+            echo "Error: cf-purge --help command failed"
+            exit 1
+          fi
+          
+          # Verify help output contains expected content
+          if ! cf-purge --help | grep -q "cf-purge"; then
+            echo "Error: cf-purge --help output doesn't contain expected content"
+            exit 1
+          fi
+          
+          echo "✅ Smoke test passed: cf-purge installed and working correctly"
