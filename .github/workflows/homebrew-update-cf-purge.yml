@@ -72,7 +72,7 @@ jobs:
 
       - name: Add this tap
         run: |
-          brew tap ${{ github.repository }}
+          brew tap ${{ github.repository_owner }}/tap
 
       - name: Install cf-purge
         run: |
