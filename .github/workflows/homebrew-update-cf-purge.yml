@@ -67,9 +67,6 @@ jobs:
       - name: Setup Homebrew
         uses: Homebrew/actions/setup-homebrew@main
 
-      - name: Install Go
-        run: brew install go
-
       - name: Add this tap
         run: |
           brew tap ${{ github.repository_owner }}/tap
