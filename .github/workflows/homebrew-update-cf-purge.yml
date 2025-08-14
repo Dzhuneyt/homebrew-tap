@@ -67,13 +67,37 @@ jobs:
       - name: Setup Homebrew
         uses: Homebrew/actions/setup-homebrew@main
 
+      - name: Debug Homebrew state
+        run: |
+          echo "=== Homebrew version ==="
+          brew --version
+          echo "=== Current taps ==="
+          brew tap
+          echo "=== Homebrew prefix ==="
+          brew --prefix
+          echo "=== Available formulas before tapping ==="
+          brew search cf-purge || echo "cf-purge not found in default taps"
+
       - name: Add this tap
         run: |
+          echo "=== Adding tap ${{ github.repository_owner }}/tap ==="
           brew tap ${{ github.repository_owner }}/tap
+          echo "=== Taps after adding ==="
+          brew tap
+          echo "=== Available formulas after tapping ==="
+          brew search cf-purge
+
+      - name: Debug formula before install
+        run: |
+          echo "=== Formula info ==="
+          brew info ${{ github.repository_owner }}/tap/cf-purge || echo "Formula info failed"
+          echo "=== Formula file content ==="
+          cat "$(brew --repository)/Library/Taps/${{ github.repository_owner }}/homebrew-tap/cf-purge.rb" || echo "Could not read formula file"
 
       - name: Install cf-purge
         run: |
-          brew install ${{ github.repository_owner }}/tap/cf-purge
+          echo "=== Installing cf-purge ==="
+          brew install ${{ github.repository_owner }}/tap/cf-purge -v
 
       - name: Verify cf-purge installation
         run: |
