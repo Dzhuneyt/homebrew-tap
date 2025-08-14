@@ -8,10 +8,12 @@ class CfPurge < Formula
     depends_on "go" => :build
   
     def install
-      system "go", "build", *std_go_args
+      cd "core" do
+        system "go", "build", *std_go_args(output: bin/"cf-purge", ldflags: "-s -w")
+      end
     end
   
     test do
-      system "#{bin}/cf-purge", "--version"
+      assert_match "cf-purge", shell_output("#{bin}/cf-purge --help")
     end
   end
