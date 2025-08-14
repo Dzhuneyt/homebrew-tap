@@ -76,7 +76,7 @@ jobs:
 
       - name: Install cf-purge
         run: |
-          brew install cf-purge
+          brew install ${{ github.repository_owner }}/tap/cf-purge
 
       - name: Verify cf-purge installation
         run: |
