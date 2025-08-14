@@ -49,16 +49,6 @@ jobs:
           sed -i.bak "s|sha256 \".*\"|sha256 \"${{ steps.sha.outputs.sha256 }}\"|" cf-purge.rb
           cat cf-purge.rb
 
-      - name: Check if formula was updated
-        id: update_check
-        run: |
-          if git diff --quiet cf-purge.rb; then
-            echo "No changes to formula"
-            exit 0
-          else
-            echo "Formula updated"
-          fi
-
       - name: Commit and push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
