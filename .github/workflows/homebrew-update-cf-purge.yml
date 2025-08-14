@@ -14,6 +14,9 @@ permissions:
 jobs:
   update-formula:
     runs-on: ubuntu-latest
+    outputs:
+      formula-updated: ${{ steps.update_check.outputs.updated }}
+      tag: ${{ steps.get_release.outputs.tag }}
     steps:
       - name: Checkout tap repo
         uses: actions/checkout@v4
@@ -44,10 +47,96 @@ jobs:
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
 
       - name: Update cf-purge.rb
+        id: update_formula
         run: |
           sed -i.bak "s|url \".*\"|url \"${{ steps.get_release.outputs.url }}\"|" cf-purge.rb
           sed -i.bak "s|sha256 \".*\"|sha256 \"${{ steps.sha.outputs.sha256 }}\"|" cf-purge.rb
           cat cf-purge.rb
+
+      - name: Check if formula was updated
+        id: update_check
+        run: |
+          if git diff --quiet cf-purge.rb; then
+            echo "updated=false" >> $GITHUB_OUTPUT
+            echo "No changes to formula"
+          else
+            echo "updated=true" >> $GITHUB_OUTPUT
+            echo "Formula updated"
+          fi
+
+  smoke-test:
+    needs: update-formula
+    if: needs.update-formula.outputs.formula-updated == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tap repo
+        uses: actions/checkout@v4
+
+      - name: Setup Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Install Go
+        run: brew install go
+
+      - name: Apply formula updates
+        run: |
+          # Apply the same updates that were made in the update-formula job
+          curl -s https://api.github.com/repos/Dzhuneyt/cf-purge/releases/latest > release.json
+          TAG=$(jq -r .tag_name release.json)
+          TARBALL_URL=$(jq -r '.tarball_url' release.json)
+          
+          curl -L "$TARBALL_URL" -o asset.tar.gz
+          SHA256=$(shasum -a 256 asset.tar.gz | awk '{print $1}')
+          
+          sed -i.bak "s|url \".*\"|url \"$TARBALL_URL\"|" cf-purge.rb
+          sed -i.bak "s|sha256 \".*\"|sha256 \"$SHA256\"|" cf-purge.rb
+
+      - name: Install cf-purge from local formula
+        run: |
+          brew install ./cf-purge.rb
+
+      - name: Verify cf-purge installation
+        run: |
+          # Test that the binary exists and is executable
+          if [ ! -f "$(brew --prefix)/bin/cf-purge" ]; then
+            echo "Error: cf-purge binary not found in expected location"
+            exit 1
+          fi
+          
+          # Test that --help works
+          if ! cf-purge --help > /dev/null 2>&1; then
+            echo "Error: cf-purge --help command failed"
+            exit 1
+          fi
+          
+          # Verify help output contains expected content
+          if ! cf-purge --help | grep -q "cf-purge"; then
+            echo "Error: cf-purge --help output doesn't contain expected content"
+            exit 1
+          fi
+          
+          echo "✅ Smoke test passed: cf-purge installed and working correctly"
+
+  commit-changes:
+    needs: [update-formula, smoke-test]
+    if: needs.update-formula.outputs.formula-updated == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tap repo
+        uses: actions/checkout@v4
+
+      - name: Apply formula updates
+        run: |
+          # Apply the same updates that were made in the update-formula job
+          curl -s https://api.github.com/repos/Dzhuneyt/cf-purge/releases/latest > release.json
+          TAG=$(jq -r .tag_name release.json)
+          TARBALL_URL=$(jq -r '.tarball_url' release.json)
+          
+          curl -L "$TARBALL_URL" -o asset.tar.gz
+          SHA256=$(shasum -a 256 asset.tar.gz | awk '{print $1}')
+          
+          sed -i.bak "s|url \".*\"|url \"$TARBALL_URL\"|" cf-purge.rb
+          sed -i.bak "s|sha256 \".*\"|sha256 \"$SHA256\"|" cf-purge.rb
 
       - name: Commit and push changes
         env:
@@ -56,6 +145,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add cf-purge.rb
-          git diff --cached --quiet && echo "No changes to commit" && exit 0
-          git commit -m "Update formula to ${{ steps.get_release.outputs.tag }}"
+          git commit -m "Update formula to ${{ needs.update-formula.outputs.tag }}"
           git push
