@@ -66,6 +66,8 @@ jobs:
     steps:
       - name: Setup Homebrew
         uses: Homebrew/actions/setup-homebrew@main
+        with:
+          test-bot: false
 
       - name: Debug Homebrew state
         run: |
